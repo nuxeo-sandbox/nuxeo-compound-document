@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<component name="test-media-asset-service-with-custom-folder" version="1.0">
+
+    <extension point="doctype" target="org.nuxeo.ecm.core.schema.TypeService">
+        <doctype extends="Document" name="Compound">
+            <facet name="Folderish"/>
+            <schema name="dublincore"/>
+            <schema name="file"/>
+        </doctype>
+
+        <doctype append="true" name="Folder">
+            <subtypes>
+                <type>Compound</type>
+            </subtypes>
+        </doctype>
+
+        <doctype extends="Document" name="CompoundSubFolder">
+            <facet name="Folderish"/>
+            <schema name="dublincore"/>
+        </doctype>
+    </extension>
+
+    <extension point="types" target="org.nuxeo.ecm.platform.types.TypeService">
+        <type id="Compound">
+            <subtypes>
+                <type>CompoundSubFolder</type>
+                <type>File</type>
+                <type>Note</type>
+            </subtypes>
+        </type>
+
+        <type id="CompoundSubFolder">
+            <subtypes>
+                <type>CompoundSubFolder</type>
+                <type>File</type>
+                <type>Note</type>
+            </subtypes>
+        </type>
+    </extension>
+
+</component>

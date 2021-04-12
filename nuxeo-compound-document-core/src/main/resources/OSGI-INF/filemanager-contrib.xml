@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.labs.compound.filemanager">
+
+    <extension target="org.nuxeo.ecm.platform.filemanager.service.FileManagerService" point="plugins">
+        <!-- order must be the lowest -->
+        <plugin class="org.nuxeo.labs.compound.filemanager.CompoundDocumentArchiveImporter"
+                name="CompoundDocumentArchiveImporter" order="-1">
+            <filter>application/zip</filter>
+        </plugin>
+    </extension>
+
+</component>

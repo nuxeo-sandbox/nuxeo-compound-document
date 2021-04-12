@@ -1,0 +1,11 @@
+<component name="org.nuxeo.labs.compound.listeners">
+
+    <extension target="org.nuxeo.ecm.core.event.EventServiceComponent" point="listener">
+        <listener name="CompoundDocumentCreatedListener" async="false" postCommit="false"
+                  class="org.nuxeo.labs.compound.listener.CompoundDocumentCreatedListener" priority="0">
+            <event>documentCreated</event>
+            <event>documentImported</event>
+        </listener>
+    </extension>
+
+</component>

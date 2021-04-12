@@ -1,0 +1,10 @@
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .
+Manifest-Version: 1.0
+Bundle-Vendor: org.nuxeo.labs
+Bundle-Version: 1.0.0
+Bundle-Name: nuxeo-compound-document-core
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: nuxeo-compound-document-core;singleton=true
+Nuxeo-Component: OSGI-INF/service-contrib.xml, OSGI-INF/filemanager-contrib.xml, OSGI-INF/listener-contrib.xml,
+    OSGI-INF/automation-contrib.xml

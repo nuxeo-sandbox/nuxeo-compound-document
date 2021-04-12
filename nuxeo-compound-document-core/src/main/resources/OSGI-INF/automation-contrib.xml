@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.labs.compound.automation">
+    <extension target="org.nuxeo.automation.scripting.internals.AutomationScriptingComponent" point="operation">
+
+        <scriptedOperation id="javascript.utils_get_compound_type">
+            <inputType>document</inputType>
+            <outputType>string</outputType>
+            <category>javascript</category>
+            <description></description>
+            <script><![CDATA[function run(input, params) {
+                  var blob = ctx.get("blob");
+                  var entries = ctx.get("entries");
+
+                  var isThreeD = false;
+
+                  entries.forEach(function(entry) {
+                    if (entry.toLowerCase().endsWith('.obj')) {
+                      isThreeD = true;
+                    }
+                  });
+
+                  return isThreeD ? null : Env.getProperty('nuxeo.compound.type.default');
+             }]]>
+            </script>
+        </scriptedOperation>
+
+        <scriptedOperation id="javascript.utils_get_compound_sub_folder_type">
+            <inputType>document</inputType>
+            <outputType>string</outputType>
+            <category>javascript</category>
+            <description></description>
+            <script><![CDATA[function run(input, params) {
+                 return Env.getProperty('nuxeo.compound.subtype.default');
+             }]]>
+            </script>
+            <param type="string" name="parentPath"/>
+            <param type="string" name="folderName"/>
+        </scriptedOperation>
+
+    </extension>
+</component>

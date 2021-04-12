@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.labs.compound.service">
+
+  <implementation class="org.nuxeo.labs.compound.service.CompoundDocumentServiceImpl" />
+
+  <service>
+    <provide interface="org.nuxeo.labs.compound.service.CompoundDocumentService" />
+  </service>
+
+  <extension point="filters" target="org.nuxeo.ecm.platform.actions.ActionService">
+    <filter id="org.nuxeo.labs.compound.service.type.filter">
+      <rule grant="true">
+        <facet>Folderish</facet>
+        <schema>file</schema>
+      </rule>
+    </filter>
+  </extension>
+
+</component>
