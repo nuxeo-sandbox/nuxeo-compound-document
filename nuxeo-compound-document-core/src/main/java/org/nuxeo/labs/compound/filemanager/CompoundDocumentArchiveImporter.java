@@ -20,6 +20,8 @@
 package org.nuxeo.labs.compound.filemanager;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.NuxeoException;
@@ -32,6 +34,8 @@ import org.nuxeo.runtime.api.Framework;
 import java.io.IOException;
 
 public class CompoundDocumentArchiveImporter extends DefaultFileImporter {
+
+    protected static final Log log = LogFactory.getLog(CompoundDocumentArchiveImporter.class);
 
     @Override
     public DocumentModel createOrUpdate(FileImporterContext context) throws IOException {
@@ -48,6 +52,7 @@ public class CompoundDocumentArchiveImporter extends DefaultFileImporter {
                 return null;
             }
         } catch (NuxeoException e) {
+            log.error(e);
             return null;
         }
     }
