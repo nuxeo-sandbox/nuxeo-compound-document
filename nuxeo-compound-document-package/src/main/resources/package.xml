@@ -1,6 +1,6 @@
 <!-- See documentation at http://doc.nuxeo.com/x/HgIz -->
 <package type="addon" name="nuxeo-compound-document" version="@VERSION@">
-  <title>Nuxeo compound document</title>
+  <title>Nuxeo Compound Document</title>
   <description>
     <p>A plugin to manage compound documents (Work in Progress)</p>
   </description>
