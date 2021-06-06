@@ -4,6 +4,7 @@
     <extension point="doctype" target="org.nuxeo.ecm.core.schema.TypeService">
         <doctype extends="Document" name="Compound">
             <facet name="Folderish"/>
+            <facet name="Compound"/>
             <schema name="dublincore"/>
             <schema name="file"/>
         </doctype>

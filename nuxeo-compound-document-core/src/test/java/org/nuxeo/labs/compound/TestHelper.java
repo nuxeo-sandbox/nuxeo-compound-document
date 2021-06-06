@@ -19,20 +19,45 @@
 
 package org.nuxeo.labs.compound;
 
+import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
+import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
+
+import java.io.File;
+import java.io.Serializable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_FACET;
+import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_PROPERTY_NAME;
 
 public class TestHelper {
 
     public static String COMPOUND_DOC_TYPE = "Compound";
-
     public static String COMPOUND_SUB_FOLDER_DOC_TYPE = "CompoundSubFolder";
 
+    public static String PNG_PATH = "/files/image.png";
     public static String INDD_ZIP_PATH = "/files/2017_Fall_Event_Invitation.zip";
+
+
+    public static DocumentModel createCompoundDocument(CoreSession session) {
+        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(),"compound",COMPOUND_DOC_TYPE);
+        return session.createDocument(compound);
+    }
+
+    public static Blob getImageBlob(Class<?> klass) {
+        return new FileBlob(new File(klass.getResource(PNG_PATH).getPath()));
+    }
+
+    public static DocumentModel createPreviewDocument(DocumentModel compound) {
+        CoreSession session = compound.getCoreSession();
+        DocumentModel preview = session.createDocumentModel(session.getRootDocument().getPathAsString(),"preview","File");
+        preview.addFacet(THUMBNAIL_FACET);
+        preview.setPropertyValue(THUMBNAIL_PROPERTY_NAME, (Serializable) getImageBlob(compound.getClass()));
+        return session.createDocument(preview);
+    }
 
     public static void checkInddCompound(DocumentModel compound) {
         assertNotNull(compound);
