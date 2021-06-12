@@ -35,6 +35,8 @@ import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_PROP
 
 public class TestHelper {
 
+    public static final String PREVIEW_THUMBNAIL_NAME = "preview";
+    public static final String THUMBNAIL_THUMBNAIL_NAME = "thumbnail";
     public static String COMPOUND_DOC_TYPE = "Compound";
     public static String COMPOUND_SUB_FOLDER_DOC_TYPE = "CompoundSubFolder";
 
@@ -47,16 +49,26 @@ public class TestHelper {
         return session.createDocument(compound);
     }
 
-    public static Blob getImageBlob(Class<?> klass) {
-        return new FileBlob(new File(klass.getResource(PNG_PATH).getPath()));
+    public static Blob getImageBlob(Class<?> klass, String filename) {
+        FileBlob blob = new FileBlob(new File(klass.getResource(PNG_PATH).getPath()));
+        blob.setFilename(filename);
+        return blob;
     }
 
     public static DocumentModel createPreviewDocument(DocumentModel compound) {
         CoreSession session = compound.getCoreSession();
         DocumentModel preview = session.createDocumentModel(session.getRootDocument().getPathAsString(),"preview","File");
         preview.addFacet(THUMBNAIL_FACET);
-        preview.setPropertyValue(THUMBNAIL_PROPERTY_NAME, (Serializable) getImageBlob(compound.getClass()));
+        preview.setPropertyValue(THUMBNAIL_PROPERTY_NAME, (Serializable) getImageBlob(compound.getClass(), PREVIEW_THUMBNAIL_NAME));
         return session.createDocument(preview);
+    }
+
+    public static DocumentModel createThumbnailDocument(DocumentModel compound) {
+        CoreSession session = compound.getCoreSession();
+        DocumentModel thumbnail = session.createDocumentModel(session.getRootDocument().getPathAsString(),"thumbnail","File");
+        thumbnail.addFacet(THUMBNAIL_FACET);
+        thumbnail.setPropertyValue(THUMBNAIL_PROPERTY_NAME, (Serializable) getImageBlob(compound.getClass(), THUMBNAIL_THUMBNAIL_NAME));
+        return session.createDocument(thumbnail);
     }
 
     public static void checkInddCompound(DocumentModel compound) {

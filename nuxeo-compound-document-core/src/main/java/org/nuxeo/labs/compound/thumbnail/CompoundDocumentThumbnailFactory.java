@@ -31,6 +31,7 @@ import org.nuxeo.runtime.api.Framework;
 import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_FACET;
 import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_PROPERTY_NAME;
 import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_PREVIEW_DOCUMENT_PROP;
+import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_THUMBNAIL_DOCUMENT_PROP;
 
 public class CompoundDocumentThumbnailFactory extends ThumbnailDocumentFactory {
 
@@ -45,20 +46,31 @@ public class CompoundDocumentThumbnailFactory extends ThumbnailDocumentFactory {
             }
         }
 
-        ThumbnailService thumbnailService = Framework.getService(ThumbnailService.class);
+        //then from the thumbnail document
+        String thumbnailDocId = (String) doc.getPropertyValue(COMPOUND_THUMBNAIL_DOCUMENT_PROP);
+        Blob thumbnailBlob = getThumbnailFromDocId(thumbnailDocId,session);
+        if (thumbnailBlob != null) {
+            return thumbnailBlob;
+        }
 
-        // otherwise get the thumbnail from the preview document
+        // then from the preview document
         String previewDocId = (String) doc.getPropertyValue(COMPOUND_PREVIEW_DOCUMENT_PROP);
-        if (StringUtils.isNotEmpty(previewDocId)) {
-            DocumentModel previewDoc = session.getDocument(new IdRef(previewDocId));
-            Blob  thumbnailBlob = thumbnailService.getThumbnail(previewDoc,session);
-            if (thumbnailBlob != null) {
-                return thumbnailBlob;
-            }
+        thumbnailBlob = getThumbnailFromDocId(previewDocId,session);
+        if (thumbnailBlob != null) {
+            return thumbnailBlob;
         }
 
         //fallback to default factory
         return getDefaultThumbnail(doc);
+    }
+
+    public Blob getThumbnailFromDocId(String docId, CoreSession session) {
+        if (StringUtils.isNotEmpty(docId)) {
+            ThumbnailService thumbnailService = Framework.getService(ThumbnailService.class);
+            DocumentModel previewDoc = session.getDocument(new IdRef(docId));
+            return thumbnailService.getThumbnail(previewDoc,session);
+        }
+        return null;
     }
 
 }

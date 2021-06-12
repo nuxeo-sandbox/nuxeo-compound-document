@@ -36,8 +36,12 @@
       <xs:element name="item" type="nxs:content" minOccurs="0" maxOccurs="unbounded"/> 
     </xs:sequence> 
   </xs:complexType>
-  <xs:element name="componentDigests" type="nxs:stringList"/>
   <xs:element name="previewDocument">
+    <xs:simpleType>
+      <xs:restriction base="xs:string" ref:resolver="documentResolver" ref:store="id"/>
+    </xs:simpleType>
+  </xs:element>
+  <xs:element name="thumbnailDocument">
     <xs:simpleType>
       <xs:restriction base="xs:string" ref:resolver="documentResolver" ref:store="id"/>
     </xs:simpleType>

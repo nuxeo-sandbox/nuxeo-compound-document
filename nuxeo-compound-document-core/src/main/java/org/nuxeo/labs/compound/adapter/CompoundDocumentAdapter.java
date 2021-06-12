@@ -45,4 +45,19 @@ public class CompoundDocumentAdapter implements CompoundDocument {
     public void setPreviewDocument(DocumentModel preview) {
         doc.setPropertyValue(COMPOUND_PREVIEW_DOCUMENT_PROP, preview.getId());
     }
+
+    @Override
+    public DocumentModel getThumbnailDocument() {
+        String thumbnailId = (String) doc.getPropertyValue(COMPOUND_THUMBNAIL_DOCUMENT_PROP);
+        if (StringUtils.isNotEmpty(thumbnailId)) {
+            return doc.getCoreSession().getDocument(new IdRef(thumbnailId));
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public void setThumbnailDocument(DocumentModel thumbnail) {
+        doc.setPropertyValue(COMPOUND_THUMBNAIL_DOCUMENT_PROP, thumbnail.getId());
+    }
 }

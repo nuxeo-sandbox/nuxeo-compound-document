@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.api.impl.blob.StringBlob;
 import org.nuxeo.ecm.core.api.thumbnail.ThumbnailService;
 import org.nuxeo.ecm.core.test.DefaultRepositoryInit;
@@ -42,6 +41,8 @@ import javax.inject.Inject;
 
 import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_FACET;
 import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_PROPERTY_NAME;
+import static org.nuxeo.labs.compound.TestHelper.PREVIEW_THUMBNAIL_NAME;
+import static org.nuxeo.labs.compound.TestHelper.THUMBNAIL_THUMBNAIL_NAME;
 
 @RunWith(FeaturesRunner.class)
 @Features({TestFeature.class})
@@ -79,16 +80,24 @@ public class TestThumbnail {
     public void testPreviewPriority() {
         DocumentModel compound = TestHelper.createCompoundDocument(session);
         CompoundDocument compoundDocument = compound.getAdapter(CompoundDocumentAdapter.class);
-        compound.addFacet(THUMBNAIL_FACET);
-        compound.setPropertyValue(THUMBNAIL_PROPERTY_NAME, new StringBlob("dummy"));
 
-        DocumentModel preview = TestHelper.createPreviewDocument(compound);
-
-        compoundDocument.setPreviewDocument(preview);
-
+        DocumentModel previewDoc = TestHelper.createPreviewDocument(compound);
+        compoundDocument.setPreviewDocument(previewDoc);
         Blob thumbnail = thumbnailService.getThumbnail(compound,session);
         Assert.assertNotNull(thumbnail);
-        Assert.assertFalse(thumbnail instanceof FileBlob);
+        Assert.assertEquals(PREVIEW_THUMBNAIL_NAME,thumbnail.getFilename());
+
+        DocumentModel thumbnailDoc = TestHelper.createThumbnailDocument(compound);
+        compoundDocument.setThumbnailDocument(thumbnailDoc);
+        thumbnail = thumbnailService.getThumbnail(compound,session);
+        Assert.assertNotNull(thumbnail);
+        Assert.assertEquals(THUMBNAIL_THUMBNAIL_NAME,thumbnail.getFilename());
+
+        compound.addFacet(THUMBNAIL_FACET);
+        compound.setPropertyValue(THUMBNAIL_PROPERTY_NAME, new StringBlob("dummy"));
+        thumbnail = thumbnailService.getThumbnail(compound,session);
+        Assert.assertNotNull(thumbnail);
+        Assert.assertTrue(thumbnail instanceof StringBlob);
     }
 
 }

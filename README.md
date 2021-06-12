@@ -24,8 +24,9 @@ At the end of the import, the `compoundDocumentTreeImported` event is fired.
 ## Thumbnail factory
 The thumbnail factory is configured for documents which use the `Compound` facet. The priority order is:
 - the `thumb:thumbnail` property of the compound document
-- the thumbnail of the the preview document set in the `compound:previewDocument` property
-- the default thumbnail (document tyope icon)
+- the thumbnail of the thumbnail document set in the `compound:thumbnailDocument` property
+- the thumbnail of the preview document set in the `compound:previewDocument` property
+- the default thumbnail (document type icon)
 
 # Support
 
