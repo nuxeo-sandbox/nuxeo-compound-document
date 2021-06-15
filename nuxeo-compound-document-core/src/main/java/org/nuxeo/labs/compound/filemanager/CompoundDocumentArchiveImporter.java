@@ -29,18 +29,20 @@ import org.nuxeo.ecm.platform.filemanager.service.extension.DefaultFileImporter;
 import org.nuxeo.labs.compound.service.CompoundDocumentService;
 import org.nuxeo.runtime.api.Framework;
 
-import java.io.IOException;
-
 public class CompoundDocumentArchiveImporter extends DefaultFileImporter {
 
     protected static final Log log = LogFactory.getLog(CompoundDocumentArchiveImporter.class);
 
     @Override
-    public DocumentModel createOrUpdate(FileImporterContext context) throws IOException {
+    public DocumentModel createOrUpdate(FileImporterContext context) {
         CoreSession session = context.getSession();
         CompoundDocumentService compoundDocumentService = Framework.getService(CompoundDocumentService.class);
         DocumentModel parent = session.getDocument(new PathRef(context.getParentPath()));
-        return compoundDocumentService.createCompoundFromArchive(parent, context.getBlob());
-
+        try {
+            return compoundDocumentService.createCompoundFromArchive(parent, context.getBlob());
+        } catch (Exception e) {
+            log.warn(e);
+            return null;
+        }
     }
 }

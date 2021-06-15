@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.test.DefaultRepositoryInit;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
@@ -36,10 +37,13 @@ import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 import static org.nuxeo.labs.compound.TestHelper.COMPOUND_DOC_TYPE;
 import static org.nuxeo.labs.compound.TestHelper.INDD_ZIP_PATH;
+import static org.nuxeo.labs.compound.TestHelper.INDD_ZIP_WITH_PREFIX_PATH;
+import static org.nuxeo.labs.compound.TestHelper.INVALID_ZIP_PATH;
 import static org.nuxeo.labs.compound.TestHelper.checkInddCompound;
 
 @RunWith(FeaturesRunner.class)
@@ -72,6 +76,12 @@ public class TestCompoundDocumentService {
         checkInddCompound(compound);
     }
 
+    @Test(expected = NuxeoException.class)
+    public void testImportFromInvalidZip() throws IOException {
+        Blob blob = new FileBlob(new File(getClass().getResource(INVALID_ZIP_PATH).getPath()));
+        DocumentModel compound = compoundDocumentService.createCompoundFromArchive(session.getRootDocument(), blob, COMPOUND_DOC_TYPE);
+    }
+
     @Test
     public void testCreateInddStructureFromZip() throws IOException {
         Blob blob = new FileBlob(new File(getClass().getResource(INDD_ZIP_PATH).getPath()));
@@ -80,5 +90,25 @@ public class TestCompoundDocumentService {
         compoundDocumentService.createStructureFromArchive(compound, blob);
         checkInddCompound(compound);
     }
+
+    @Test(expected = NuxeoException.class)
+    public void testCreateInddStructureFromInvalidZip() throws IOException {
+        Blob blob = new FileBlob(new File(getClass().getResource(INVALID_ZIP_PATH).getPath()));
+        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(), "test", COMPOUND_DOC_TYPE);
+        compound = session.createDocument(compound);
+        compoundDocumentService.createStructureFromArchive(compound, blob);
+        List<DocumentModel> children = session.getChildren(compound.getRef());
+        Assert.assertEquals(0, children.size());
+    }
+
+    @Test
+    public void testCreateInddStructureFromZipWithPrefix() throws IOException {
+        Blob blob = new FileBlob(new File(getClass().getResource(INDD_ZIP_WITH_PREFIX_PATH).getPath()));
+        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(), "test", COMPOUND_DOC_TYPE);
+        compound = session.createDocument(compound);
+        compoundDocumentService.createStructureFromArchive(compound, blob);
+        checkInddCompound(compound);
+    }
+
 
 }

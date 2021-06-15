@@ -51,7 +51,7 @@ public class CompoundDocumentCreatedListener implements EventListener {
 
         Blob blob = (Blob) doc.getPropertyValue("file:content");
 
-        if (blob == null || !compoundDocumentService.isSupportedArchiveFile(blob,null)) {
+        if (blob == null || !compoundDocumentService.isSupportedArchiveFile(blob)) {
             return;
         }
 

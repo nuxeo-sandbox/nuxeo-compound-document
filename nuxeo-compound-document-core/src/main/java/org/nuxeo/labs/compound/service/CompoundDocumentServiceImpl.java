@@ -22,6 +22,7 @@ import org.nuxeo.ecm.platform.filemanager.api.FileManager;
 import org.nuxeo.ecm.platform.filemanager.service.FileManagerService;
 import org.nuxeo.ecm.platform.types.Type;
 import org.nuxeo.ecm.platform.types.TypeManager;
+import org.nuxeo.labs.compound.api.CompoundArchive;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
@@ -55,17 +56,13 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
     }
 
     @Override
-    public String getTargetCompoundDocumentTypeFromContext(DocumentModel parent, Blob archiveBlob) {
-        List<String> entries = new ArrayList<>();
-        if (!isSupportedArchiveFile(archiveBlob, entries)) {
-            return null;
-        }
+    public String getTargetCompoundDocumentTypeFromContext(DocumentModel parent, CompoundArchive archive) {
         AutomationService automationService = Framework.getService(AutomationService.class);
         OperationContext ctx = new OperationContext(parent.getCoreSession());
         Map<String, Object> params = new HashMap<>();
         ctx.setInput(parent);
-        ctx.put("blob", archiveBlob);
-        ctx.put("entries", entries);
+        ctx.put("blob", archive.getBlob());
+        ctx.put("entries", archive.getValidEntryList());
         try {
             return (String) automationService.run(ctx, COMPOUND_TYPE_SCRIPT, params);
         } catch (OperationException e) {
@@ -100,7 +97,8 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
 
     @Override
     public DocumentModel createCompoundFromArchive(DocumentModel parent, Blob archiveBlob) throws IOException {
-        String targetType = getTargetCompoundDocumentTypeFromContext(parent, archiveBlob);
+        CompoundArchive archive = toCompoundArchive(archiveBlob);
+        String targetType = getTargetCompoundDocumentTypeFromContext(parent, archive);
         if (StringUtils.isNotEmpty(targetType)) {
             TypeManager typeService = Framework.getService(TypeManager.class);
             Type containerType = typeService.getType(parent.getType());
@@ -116,10 +114,17 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
 
     @Override
     public void createStructureFromArchive(DocumentModel compound, Blob archiveBlob) throws IOException {
+        CompoundArchive archive = toCompoundArchive(archiveBlob);
+        createStructureFromArchive(compound,archive);
+    }
+
+    public void createStructureFromArchive(DocumentModel compound, CompoundArchive archive) throws IOException {
         CoreSession session = compound.getCoreSession();
         FileManagerService fileManager = (FileManagerService) Framework.getService(FileManager.class);
 
-        ZipInputStream zin = new ZipInputStream(new BufferedInputStream(archiveBlob.getStream()));
+        String prefix = archive.getPathPrefix();
+
+        ZipInputStream zin = new ZipInputStream(new BufferedInputStream(archive.getBlob().getStream()));
         ZipEntry entry;
         while ((entry = zin.getNextEntry()) != null) {
             String filename = entry.getName();
@@ -129,7 +134,15 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                 continue;
             }
 
-            Path path = Path.of(entry.getName());
+            if (StringUtils.isNotEmpty(prefix)) {
+                if (prefix.equals(filename)) {
+                    continue;
+                } else {
+                    filename = filename.substring(prefix.length());
+                }
+            }
+
+            Path path = Path.of(filename);
             String componentName = path.getFileName().toString();
             String ComponentParentPath = path.getParent() != null ? path.getParent().toString() : "";
 
@@ -160,21 +173,37 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
     }
 
     @Override
-    public boolean isSupportedArchiveFile(Blob archiveBlob, List<String> outputEntryList) {
-        if (!"application/zip".equals(archiveBlob.getMimeType())) {
-            return false;
-        }
+    public boolean isSupportedArchiveFile(Blob archiveBlob) {
+        return toCompoundArchive(archiveBlob) != null;
+    }
+
+    /**
+     * Turn the archive blob into an object
+     * @param archiveBlob
+     * @return
+     */
+    public CompoundArchive toCompoundArchive(Blob archiveBlob) {
+        List<String> validEntryList = new ArrayList<>();
+        String prefix = null;
         try (ZipInputStream zin = new ZipInputStream(new BufferedInputStream(archiveBlob.getStream()))) {
             ZipEntry entry;
             boolean isSupported = false;
             while ((entry = zin.getNextEntry()) != null && (isSupported = !MARKER_BLACKLIST.contains(entry.getName()))) {
-                if (outputEntryList != null) {
-                    if (isValidEntry(entry.getName())) {
-                        outputEntryList.add(entry.getName());
+                String name = entry.getName();
+                if (isValidEntry(name)) {
+                    validEntryList.add(name);
+                    if (prefix == null) {
+                        prefix = name;
+                    } else if (StringUtils.isNotBlank(prefix)) {
+                        prefix = longestSubstr(prefix,name);
                     }
                 }
             }
-            return isSupported;
+            if (!isSupported) {
+                throw new NuxeoException("Unsupported archive");
+            } else {
+                return new CompoundArchive(archiveBlob,validEntryList,prefix);
+            }
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
@@ -187,14 +216,58 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
      * @return
      */
     public boolean isValidEntry(String entry) {
-        if (entry.startsWith("__MACOSX/") || entry.startsWith(".") || entry.contentEquals("desktop.ini")
-                || entry.contentEquals("Thumbs.db") || entry.startsWith("Icon")
-                // Avoid hacks trying to access a directory outside the current one
-                || entry.contentEquals("../") || entry.endsWith(".DS_Store")) {
+        if (entry.contains("__MACOSX/") || entry.contains("../") || entry.endsWith(".DS_Store")) {
             return false;
-        } else {
-            return true;
         }
+
+        Path path = Path.of(entry);
+        String filename = path.getFileName().toString();
+        if (filename.startsWith(".") || filename.contentEquals("desktop.ini")
+                || filename.contentEquals("Thumbs.db") || filename.startsWith("Icon")) {
+            return false;
+        }
+
+        return true;
     }
+
+    public String longestSubstr(String s, String t) {
+        if (s.isEmpty() || t.isEmpty()) {
+            return "";
+        }
+
+        int m = s.length();
+        int n = t.length();
+        int cost = 0;
+        int maxLen = 0;
+        int[] p = new int[n];
+        int[] d = new int[n];
+
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                // calculate cost/score
+                if (s.charAt(i) != t.charAt(j)) {
+                    cost = 0;
+                } else {
+                    if ((i == 0) || (j == 0)) {
+                        cost = 1;
+                    } else {
+                        cost = p[j - 1] + 1;
+                    }
+                }
+                d[j] = cost;
+
+                if (cost > maxLen) {
+                    maxLen = cost;
+                }
+            } // for {}
+
+            int[] swap = p;
+            p = d;
+            d = swap;
+        }
+
+        return maxLen > 0 ? s.substring(0,maxLen) : "";
+    }
+
 
 }

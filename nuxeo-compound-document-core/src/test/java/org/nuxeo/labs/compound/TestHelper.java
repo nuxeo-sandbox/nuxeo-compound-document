@@ -42,7 +42,8 @@ public class TestHelper {
 
     public static String PNG_PATH = "/files/image.png";
     public static String INDD_ZIP_PATH = "/files/2017_Fall_Event_Invitation.zip";
-
+    public static String INDD_ZIP_WITH_PREFIX_PATH = "/files/2017_Fall_Event_Invitation_prefix.zip";
+    public static String INVALID_ZIP_PATH = "/files/invalid.zip";
 
     public static DocumentModel createCompoundDocument(CoreSession session) {
         DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(),"compound",COMPOUND_DOC_TYPE);
