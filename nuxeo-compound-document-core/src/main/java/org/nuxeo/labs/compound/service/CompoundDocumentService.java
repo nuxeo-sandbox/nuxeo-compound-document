@@ -26,12 +26,21 @@ public interface CompoundDocumentService {
     /**
      * Create a compound document in parent
      * @param parent
+     * @param archiveBlob
      * @param documentType
+     * @return the newly created compound document
+     * @throws IOException
+     */
+    DocumentModel createCompoundFromArchive(DocumentModel parent, Blob archiveBlob, String documentType) throws IOException;
+
+    /**
+     * Create a compound document in parent
+     * @param parent
      * @param archiveBlob
      * @return the newly created compound document
      * @throws IOException
      */
-    DocumentModel createCompoundFromArchive(DocumentModel parent, String documentType, Blob archiveBlob) throws IOException;
+    DocumentModel createCompoundFromArchive(DocumentModel parent, Blob archiveBlob) throws IOException;
 
     /**
      * Create a document structure from the archive blob in the input document

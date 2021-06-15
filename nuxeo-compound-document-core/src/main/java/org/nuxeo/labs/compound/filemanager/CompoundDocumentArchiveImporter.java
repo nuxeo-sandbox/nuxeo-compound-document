@@ -19,12 +19,10 @@
 
 package org.nuxeo.labs.compound.filemanager;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.platform.filemanager.api.FileImporterContext;
 import org.nuxeo.ecm.platform.filemanager.service.extension.DefaultFileImporter;
@@ -39,21 +37,10 @@ public class CompoundDocumentArchiveImporter extends DefaultFileImporter {
 
     @Override
     public DocumentModel createOrUpdate(FileImporterContext context) throws IOException {
-        // check if the parent document accepts the CompoundAsset type
-        try {
-            CoreSession session = context.getSession();
-            CompoundDocumentService CompoundDocumentService = Framework.getService(CompoundDocumentService.class);
-            DocumentModel parent = session.getDocument(new PathRef(context.getParentPath()));
-            String targetType = CompoundDocumentService.getTargetCompoundDocumentTypeFromContext(parent, context.getBlob());
-            if (StringUtils.isNotEmpty(targetType)) {
-                checkAllowedSubtypes(session,parent.getPathAsString(),targetType);
-                return CompoundDocumentService.createCompoundFromArchive(parent,targetType,context.getBlob());
-            } else {
-                return null;
-            }
-        } catch (NuxeoException e) {
-            log.error(e);
-            return null;
-        }
+        CoreSession session = context.getSession();
+        CompoundDocumentService compoundDocumentService = Framework.getService(CompoundDocumentService.class);
+        DocumentModel parent = session.getDocument(new PathRef(context.getParentPath()));
+        return compoundDocumentService.createCompoundFromArchive(parent, context.getBlob());
+
     }
 }

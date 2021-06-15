@@ -2,6 +2,7 @@ package org.nuxeo.labs.compound.service;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.commons.lang3.StringUtils;
 import org.nuxeo.ecm.automation.AutomationService;
 import org.nuxeo.ecm.automation.OperationContext;
 import org.nuxeo.ecm.automation.OperationException;
@@ -19,6 +20,8 @@ import org.nuxeo.ecm.platform.actions.ejb.ActionManager;
 import org.nuxeo.ecm.platform.filemanager.api.FileImporterContext;
 import org.nuxeo.ecm.platform.filemanager.api.FileManager;
 import org.nuxeo.ecm.platform.filemanager.service.FileManagerService;
+import org.nuxeo.ecm.platform.types.Type;
+import org.nuxeo.ecm.platform.types.TypeManager;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
@@ -37,15 +40,11 @@ import static org.nuxeo.ecm.core.io.ExportConstants.MARKER_FILE;
 
 public class CompoundDocumentServiceImpl extends DefaultComponent implements CompoundDocumentService {
 
-    public static String TYPE_FILTER_KEY = "org.nuxeo.labs.compound.service.type.filter";
-
-    public static String COMPOUND_TYPE_SCRIPT = "javascript.utils_get_compound_type";
-
-    public static String SUB_FOLDER_TYPE_SCRIPT = "javascript.utils_get_compound_sub_folder_type";
-
     public static final String COMPOUND_ARCHIVE_IMPORTED = "compoundDocumentTreeImported";
-
-    public static List<String> MARKER_BLACKLIST = Arrays.asList(MARKER_FILE,"meta-data.csv");
+    public static String TYPE_FILTER_KEY = "org.nuxeo.labs.compound.service.type.filter";
+    public static String COMPOUND_TYPE_SCRIPT = "javascript.utils_get_compound_type";
+    public static String SUB_FOLDER_TYPE_SCRIPT = "javascript.utils_get_compound_sub_folder_type";
+    public static List<String> MARKER_BLACKLIST = Arrays.asList(MARKER_FILE, "meta-data.csv");
 
     @Override
     public boolean isCompoundDocument(DocumentModel doc) {
@@ -65,8 +64,8 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         OperationContext ctx = new OperationContext(parent.getCoreSession());
         Map<String, Object> params = new HashMap<>();
         ctx.setInput(parent);
-        ctx.put("blob",archiveBlob);
-        ctx.put("entries",entries);
+        ctx.put("blob", archiveBlob);
+        ctx.put("entries", entries);
         try {
             return (String) automationService.run(ctx, COMPOUND_TYPE_SCRIPT, params);
         } catch (OperationException e) {
@@ -79,17 +78,17 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         OperationContext ctx = new OperationContext(compound.getCoreSession());
         Map<String, Object> params = new HashMap<>();
         params.put("parentPath", parentPath);
-        params.put("folderName",name);
+        params.put("folderName", name);
         ctx.setInput(compound);
         try {
-            return  (String) automationService.run(ctx, SUB_FOLDER_TYPE_SCRIPT, params);
+            return (String) automationService.run(ctx, SUB_FOLDER_TYPE_SCRIPT, params);
         } catch (OperationException e) {
             throw new NuxeoException(e);
         }
     }
 
     @Override
-    public DocumentModel createCompoundFromArchive(DocumentModel parent, String documentType, Blob archiveBlob) throws IOException {
+    public DocumentModel createCompoundFromArchive(DocumentModel parent, Blob archiveBlob, String documentType) throws IOException {
         CoreSession session = parent.getCoreSession();
         String compoundName = FilenameUtils.removeExtension(archiveBlob.getFilename());
         DocumentModel compound = session.createDocumentModel(parent.getPathAsString(), compoundName, documentType);
@@ -100,6 +99,22 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
     }
 
     @Override
+    public DocumentModel createCompoundFromArchive(DocumentModel parent, Blob archiveBlob) throws IOException {
+        String targetType = getTargetCompoundDocumentTypeFromContext(parent, archiveBlob);
+        if (StringUtils.isNotEmpty(targetType)) {
+            TypeManager typeService = Framework.getService(TypeManager.class);
+            Type containerType = typeService.getType(parent.getType());
+            if (containerType == null || !typeService.isAllowedSubType(targetType, parent.getType(), parent)) {
+                return null;
+            } else {
+                return createCompoundFromArchive(parent, archiveBlob, targetType);
+            }
+        } else {
+            return null;
+        }
+    }
+
+    @Override
     public void createStructureFromArchive(DocumentModel compound, Blob archiveBlob) throws IOException {
         CoreSession session = compound.getCoreSession();
         FileManagerService fileManager = (FileManagerService) Framework.getService(FileManager.class);
@@ -107,13 +122,10 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         ZipInputStream zin = new ZipInputStream(new BufferedInputStream(archiveBlob.getStream()));
         ZipEntry entry;
         while ((entry = zin.getNextEntry()) != null) {
-            String fileName = entry.getName();
+            String filename = entry.getName();
 
             // filter OS crap
-            if (fileName.startsWith("__MACOSX/") || fileName.startsWith(".") || fileName.contentEquals("desktop.ini")
-                    || fileName.contentEquals("Thumbs.db") || fileName.startsWith("Icon")
-                    // Avoid hacks trying to access a directory outside the current one
-                    || fileName.contentEquals("../") || fileName.endsWith(".DS_Store")) {
+            if (!isValidEntry(filename)) {
                 continue;
             }
 
@@ -126,10 +138,11 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             if (entry.isDirectory()) {
                 DocumentModel folder = fileManager.defaultCreateFolder(
                         session, componentName, nuxeoPath, getSubFolderTypeFromContext(
-                                compound,nuxeoPath,componentName), true,true);
-                if (folder==null) {
-                    throw new NuxeoException("Filemanager couldn't create the folder: "+nuxeoPath);
+                                compound, nuxeoPath, componentName), true, true);
+                if (folder == null) {
+                    throw new NuxeoException("Filemanager couldn't create the folder: " + nuxeoPath);
                 }
+
             } else {
                 Blob fileBlob = new FileBlob(new CloseShieldInputStream(zin));
                 fileBlob.setFilename(componentName);
@@ -155,8 +168,10 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             ZipEntry entry;
             boolean isSupported = false;
             while ((entry = zin.getNextEntry()) != null && (isSupported = !MARKER_BLACKLIST.contains(entry.getName()))) {
-                if (outputEntryList!=null) {
-                    outputEntryList.add(entry.getName());
+                if (outputEntryList != null) {
+                    if (isValidEntry(entry.getName())) {
+                        outputEntryList.add(entry.getName());
+                    }
                 }
             }
             return isSupported;
@@ -164,4 +179,22 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             throw new NuxeoException(e);
         }
     }
+
+    /**
+     * filter OS crap
+     *
+     * @param entry
+     * @return
+     */
+    public boolean isValidEntry(String entry) {
+        if (entry.startsWith("__MACOSX/") || entry.startsWith(".") || entry.contentEquals("desktop.ini")
+                || entry.contentEquals("Thumbs.db") || entry.startsWith("Icon")
+                // Avoid hacks trying to access a directory outside the current one
+                || entry.contentEquals("../") || entry.endsWith(".DS_Store")) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
 }

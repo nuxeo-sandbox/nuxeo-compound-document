@@ -29,9 +29,7 @@ import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.test.DefaultRepositoryInit;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
-import org.nuxeo.ecm.platform.test.PlatformFeature;
 import org.nuxeo.labs.compound.TestFeature;
-import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
 
@@ -62,7 +60,7 @@ public class TestCompoundDocumentService {
 
     @Test
     public void testIsCompoundAsset() {
-        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(),"test",COMPOUND_DOC_TYPE);
+        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(), "test", COMPOUND_DOC_TYPE);
         compound = session.createDocument(compound);
         assertTrue(compoundDocumentService.isCompoundDocument(compound));
     }
@@ -70,16 +68,16 @@ public class TestCompoundDocumentService {
     @Test
     public void testImportFromZip() throws IOException {
         Blob blob = new FileBlob(new File(getClass().getResource(INDD_ZIP_PATH).getPath()));
-        DocumentModel compound = compoundDocumentService.createCompoundFromArchive(session.getRootDocument(), COMPOUND_DOC_TYPE, blob);
+        DocumentModel compound = compoundDocumentService.createCompoundFromArchive(session.getRootDocument(), blob, COMPOUND_DOC_TYPE);
         checkInddCompound(compound);
     }
 
     @Test
     public void testCreateInddStructureFromZip() throws IOException {
         Blob blob = new FileBlob(new File(getClass().getResource(INDD_ZIP_PATH).getPath()));
-        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(),"test",COMPOUND_DOC_TYPE);
+        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(), "test", COMPOUND_DOC_TYPE);
         compound = session.createDocument(compound);
-        compoundDocumentService.createStructureFromArchive(compound,blob);
+        compoundDocumentService.createStructureFromArchive(compound, blob);
         checkInddCompound(compound);
     }
 
