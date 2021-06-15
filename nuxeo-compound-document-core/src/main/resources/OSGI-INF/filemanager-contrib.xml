@@ -4,7 +4,7 @@
     <extension target="org.nuxeo.ecm.platform.filemanager.service.FileManagerService" point="plugins">
         <!-- order must be the lowest -->
         <plugin class="org.nuxeo.labs.compound.filemanager.CompoundDocumentArchiveImporter"
-                name="CompoundDocumentArchiveImporter" order="-1">
+                name="CompoundDocumentArchiveImporter" order="-10">
             <filter>application/zip</filter>
         </plugin>
     </extension>
