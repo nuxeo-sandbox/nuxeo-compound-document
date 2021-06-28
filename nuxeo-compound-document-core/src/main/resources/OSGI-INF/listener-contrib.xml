@@ -2,13 +2,13 @@
 
     <extension target="org.nuxeo.ecm.core.event.EventServiceComponent" point="listener">
         <listener name="CompoundDocumentCreatedListener" async="false" postCommit="false"
-                  class="org.nuxeo.labs.compound.listener.CompoundDocumentCreatedListener" priority="0">
+                  class="org.nuxeo.labs.compound.listener.CompoundDocumentCreatedListener" priority="-1">
             <event>documentCreated</event>
             <event>documentImported</event>
         </listener>
 
         <listener name="CompoundDocumentNewVersionListener" async="false" postCommit="false"
-                  class="org.nuxeo.labs.compound.listener.CompoundDocumentNewVersionListener" priority="0">
+                  class="org.nuxeo.labs.compound.listener.CompoundDocumentNewVersionListener" priority="-1">
             <event>beforeDocumentModification</event>
         </listener>
 
