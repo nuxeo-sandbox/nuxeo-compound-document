@@ -33,6 +33,8 @@ import java.io.IOException;
 
 public class CompoundDocumentCreatedListener implements EventListener {
 
+    public static final String FILE_CONTENT = "file:content";
+
     @Override
     public void handleEvent(Event event) {
         EventContext ctx = event.getContext();
@@ -49,7 +51,7 @@ public class CompoundDocumentCreatedListener implements EventListener {
             return;
         }
 
-        Blob blob = (Blob) doc.getPropertyValue("file:content");
+        Blob blob = (Blob) doc.getPropertyValue(FILE_CONTENT);
 
         if (blob == null || !compoundDocumentService.isSupportedArchiveFile(blob)) {
             return;
@@ -60,6 +62,9 @@ public class CompoundDocumentCreatedListener implements EventListener {
         } catch (IOException e) {
             throw new NuxeoException(e);
         }
+
+        //remove blob
+        doc.setPropertyValue(FILE_CONTENT,null);
 
     }
 

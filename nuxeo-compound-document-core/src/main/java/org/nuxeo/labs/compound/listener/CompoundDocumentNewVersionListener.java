@@ -73,6 +73,9 @@ public class CompoundDocumentNewVersionListener implements EventListener {
             throw new NuxeoException(e);
         }
 
+        //remove blob
+        doc.setPropertyValue(FILE_CONTENT,null);
+
     }
 
 }
