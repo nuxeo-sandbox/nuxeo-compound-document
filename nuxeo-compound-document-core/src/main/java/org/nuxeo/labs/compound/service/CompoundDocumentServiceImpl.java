@@ -9,6 +9,8 @@ import org.nuxeo.ecm.automation.OperationException;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentModelList;
+import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.event.Event;
@@ -34,14 +36,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static org.nuxeo.ecm.core.io.ExportConstants.MARKER_FILE;
+import static org.nuxeo.ecm.core.schema.FacetNames.FOLDERISH;
 
 public class CompoundDocumentServiceImpl extends DefaultComponent implements CompoundDocumentService {
 
     public static final String COMPOUND_ARCHIVE_IMPORTED = "compoundDocumentTreeImported";
+    public static final String STRUCTURE_IMPORTED = "structureUpdated";
     public static String TYPE_FILTER_KEY = "org.nuxeo.labs.compound.service.type.filter";
     public static String COMPOUND_TYPE_SCRIPT = "javascript.utils_get_compound_type";
     public static String SUB_FOLDER_TYPE_SCRIPT = "javascript.utils_get_compound_sub_folder_type";
@@ -115,7 +120,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
     @Override
     public void createStructureFromArchive(DocumentModel compound, Blob archiveBlob) throws IOException {
         CompoundArchive archive = toCompoundArchive(archiveBlob);
-        createStructureFromArchive(compound,archive);
+        createStructureFromArchive(compound, archive);
     }
 
     public void createStructureFromArchive(DocumentModel compound, CompoundArchive archive) throws IOException {
@@ -142,7 +147,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                 }
             }
 
-            String normalizedEntryName = entryName.endsWith("/") ? entryName.substring(0,entryName.length()-1) : entryName;
+            String normalizedEntryName = entryName.endsWith("/") ? entryName.substring(0, entryName.length() - 1) : entryName;
             String componentName = FilenameUtils.getName(normalizedEntryName);
             String ComponentParentPath = FilenameUtils.getPath(normalizedEntryName);
 
@@ -166,10 +171,40 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             }
         }
 
+        compound.putContextData(STRUCTURE_IMPORTED,true);
+
         DocumentEventContext ctx = new DocumentEventContext(session, session.getPrincipal(), compound);
         Event event = ctx.newEvent(COMPOUND_ARCHIVE_IMPORTED);
         Framework.getService(EventService.class).fireEvent(event);
         session.saveDocument(compound);
+    }
+
+    @Override
+    public void updateStructureFromArchive(DocumentModel compound, Blob archiveBlob) throws IOException {
+        CompoundArchive archive = toCompoundArchive(archiveBlob);
+        updateStructureFromArchive(compound, archive);
+    }
+
+    @Override
+    public void updateStructureFromArchive(DocumentModel compound, CompoundArchive archive) throws IOException {
+        CoreSession session = compound.getCoreSession();
+        String query = String.format(
+                "Select * FROM Document Where ecm:isVersion = 0 AND ecm:isProxy = 0 AND ecm:isTrashed = 0 AND ecm:ancestorId = '%s'",
+                compound.getId());
+        DocumentModelList children = session.query(query);
+
+        List<DocumentModel> orphans = children.stream().filter(document -> {
+            String relativePath = document.getPathAsString().substring(compound.getPathAsString().length()+1);
+            //add trailing / for folders
+            relativePath = document.hasFacet(FOLDERISH) ? relativePath + '/' : relativePath;
+            return !archive.getValidEntryList().contains(archive.getPathPrefix()+relativePath);
+        }).collect(Collectors.toList());
+
+        //delete orphans
+        session.removeDocuments(orphans.stream().map(DocumentModel::getRef).toArray(DocumentRef[]::new));
+
+        //update structure
+        createStructureFromArchive(compound, archive);
     }
 
     @Override
@@ -179,6 +214,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
 
     /**
      * Turn the archive blob into an object
+     *
      * @param archiveBlob
      * @return
      */
@@ -203,14 +239,14 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                     if (prefix == null) {
                         prefix = folderPath;
                     } else if (StringUtils.isNotBlank(prefix)) {
-                        prefix = longestSubstr(prefix,folderPath);
+                        prefix = longestSubstr(prefix, folderPath);
                     }
                 }
             }
             if (!isSupported) {
                 throw new NuxeoException("Unsupported archive");
             } else {
-                return new CompoundArchive(archiveBlob,validEntryList,prefix);
+                return new CompoundArchive(archiveBlob, validEntryList, prefix);
             }
         } catch (IOException e) {
             throw new NuxeoException(e);
@@ -274,7 +310,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             d = swap;
         }
 
-        return maxLen > 0 ? s.substring(0,maxLen) : "";
+        return maxLen > 0 ? s.substring(0, maxLen) : "";
     }
 
 

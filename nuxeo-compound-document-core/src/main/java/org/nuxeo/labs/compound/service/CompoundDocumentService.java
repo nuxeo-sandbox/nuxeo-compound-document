@@ -51,6 +51,22 @@ public interface CompoundDocumentService {
     void createStructureFromArchive(DocumentModel compound, Blob archiveBlob) throws IOException;
 
     /**
+     * Update a document structure from the archive blob in the input document
+     * @param compound
+     * @param archiveBlob
+     * @throws IOException
+     */
+    void updateStructureFromArchive(DocumentModel compound,  Blob archiveBlob) throws IOException;
+
+    /**
+     * Update a document structure from the archive blob in the input document
+     * @param compound
+     * @param archive
+     * @throws IOException
+     */
+    void updateStructureFromArchive(DocumentModel compound,  CompoundArchive archive) throws IOException;
+
+    /**
      *
      * @param archiveBlob
      * @return true if the archive file is supported by this service

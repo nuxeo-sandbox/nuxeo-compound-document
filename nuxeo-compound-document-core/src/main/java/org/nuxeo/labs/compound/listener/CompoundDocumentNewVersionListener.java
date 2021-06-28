@@ -1,0 +1,78 @@
+/*
+ * (C) Copyright 2021 Nuxeo (http://nuxeo.com/) and others.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors:
+ *     Michael Vachette
+ */
+
+package org.nuxeo.labs.compound.listener;
+
+import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.NuxeoException;
+import org.nuxeo.ecm.core.api.model.Property;
+import org.nuxeo.ecm.core.event.Event;
+import org.nuxeo.ecm.core.event.EventContext;
+import org.nuxeo.ecm.core.event.EventListener;
+import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
+import org.nuxeo.labs.compound.service.CompoundDocumentService;
+import org.nuxeo.runtime.api.Framework;
+
+import java.io.IOException;
+
+import static org.nuxeo.labs.compound.service.CompoundDocumentServiceImpl.STRUCTURE_IMPORTED;
+
+public class CompoundDocumentNewVersionListener implements EventListener {
+
+    public static final String FILE_CONTENT = "file:content";
+
+    @Override
+    public void handleEvent(Event event) {
+        EventContext ctx = event.getContext();
+        if (!(ctx instanceof DocumentEventContext)) {
+            return;
+        }
+
+        DocumentEventContext docCtx = (DocumentEventContext) ctx;
+        DocumentModel doc = docCtx.getSourceDocument();
+
+        CompoundDocumentService compoundDocumentService = Framework.getService(CompoundDocumentService.class);
+
+        if (!compoundDocumentService.isCompoundDocument(doc)) {
+            return;
+        }
+
+        Boolean flag = (Boolean) doc.getContextData(STRUCTURE_IMPORTED);
+        if (flag!=null && flag) {
+            //structure was already updated in this transaction
+            return;
+        }
+
+        Property fileProperty = doc.getProperty(FILE_CONTENT);
+        Blob blob = (Blob) doc.getPropertyValue(FILE_CONTENT);
+
+        if (blob == null || !fileProperty.isDirty() || !compoundDocumentService.isSupportedArchiveFile(blob)) {
+            return;
+        }
+
+        try {
+            compoundDocumentService.updateStructureFromArchive(doc, blob);
+        } catch (IOException e) {
+            throw new NuxeoException(e);
+        }
+
+    }
+
+}

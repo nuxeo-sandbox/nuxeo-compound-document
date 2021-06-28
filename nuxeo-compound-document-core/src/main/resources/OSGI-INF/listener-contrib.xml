@@ -6,6 +6,12 @@
             <event>documentCreated</event>
             <event>documentImported</event>
         </listener>
+
+        <listener name="CompoundDocumentNewVersionListener" async="false" postCommit="false"
+                  class="org.nuxeo.labs.compound.listener.CompoundDocumentNewVersionListener" priority="0">
+            <event>beforeDocumentModification</event>
+        </listener>
+
     </extension>
 
 </component>

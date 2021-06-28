@@ -46,6 +46,7 @@ import static org.nuxeo.labs.compound.TestHelper.INDD_ZIP_PATH;
 import static org.nuxeo.labs.compound.TestHelper.INDD_ZIP_WITH_PREFIX_PATH;
 import static org.nuxeo.labs.compound.TestHelper.INVALID_ZIP_PATH;
 import static org.nuxeo.labs.compound.TestHelper.checkInddCompound;
+import static org.nuxeo.labs.compound.service.CompoundDocumentServiceImpl.STRUCTURE_IMPORTED;
 
 @RunWith(FeaturesRunner.class)
 @Features({TestFeature.class})
@@ -131,6 +132,19 @@ public class TestCompoundDocumentService {
         DocumentModelList children = session.getChildren(compound.getRef());
         Assert.assertEquals(2,children.size());
         Assert.assertTrue(children.get(0).getPropertyValue("dc:title").toString().startsWith("doc"));
+    }
+
+    @Test
+    public void testCreateAndUpdateStructure() throws IOException {
+        Blob initialBlob = new FileBlob(new File(getClass().getResource("/files/update_test_initial.zip").getPath()));
+        Blob upadteBlob = new FileBlob(new File(getClass().getResource("/files/update_test_update.zip").getPath()));
+        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(), "test", COMPOUND_DOC_TYPE);
+        compound = session.createDocument(compound);
+        compoundDocumentService.createStructureFromArchive(compound, initialBlob);
+        compoundDocumentService.updateStructureFromArchive(compound, upadteBlob);
+        Assert.assertTrue((Boolean) compound.getContextData(STRUCTURE_IMPORTED));
+        DocumentModelList children = session.getChildren(compound.getRef());
+        Assert.assertEquals(4,children.size());
     }
 
 
