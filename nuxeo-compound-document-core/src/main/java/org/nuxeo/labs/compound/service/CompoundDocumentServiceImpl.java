@@ -127,24 +127,24 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         ZipInputStream zin = new ZipInputStream(new BufferedInputStream(archive.getBlob().getStream()));
         ZipEntry entry;
         while ((entry = zin.getNextEntry()) != null) {
-            String filename = entry.getName();
+            String entryName = entry.getName();
 
             // filter OS crap
-            if (!isValidEntry(filename)) {
+            if (!isValidEntry(entryName)) {
                 continue;
             }
 
             if (StringUtils.isNotEmpty(prefix)) {
-                if (prefix.equals(filename)) {
+                if (prefix.length() >= entryName.length()) {
                     continue;
                 } else {
-                    filename = filename.substring(prefix.length());
+                    entryName = entryName.substring(prefix.length());
                 }
             }
 
-            Path path = Path.of(filename);
-            String componentName = path.getFileName().toString();
-            String ComponentParentPath = path.getParent() != null ? path.getParent().toString() : "";
+            String normalizedEntryName = entryName.endsWith("/") ? entryName.substring(0,entryName.length()-1) : entryName;
+            String componentName = FilenameUtils.getName(normalizedEntryName);
+            String ComponentParentPath = FilenameUtils.getPath(normalizedEntryName);
 
             String nuxeoPath = compound.getPathAsString() + "/" + ComponentParentPath;
 
@@ -192,10 +192,18 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                 String name = entry.getName();
                 if (isValidEntry(name)) {
                     validEntryList.add(name);
+
+                    //get path prefix
+                    String folderPath;
+                    if (entry.isDirectory()) {
+                        folderPath = name;
+                    } else {
+                        folderPath = FilenameUtils.getPath(name);
+                    }
                     if (prefix == null) {
-                        prefix = name;
+                        prefix = folderPath;
                     } else if (StringUtils.isNotBlank(prefix)) {
-                        prefix = longestSubstr(prefix,name);
+                        prefix = longestSubstr(prefix,folderPath);
                     }
                 }
             }

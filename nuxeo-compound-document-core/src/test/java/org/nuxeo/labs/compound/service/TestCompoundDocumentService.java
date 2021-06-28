@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.test.DefaultRepositoryInit;
@@ -108,6 +109,28 @@ public class TestCompoundDocumentService {
         compound = session.createDocument(compound);
         compoundDocumentService.createStructureFromArchive(compound, blob);
         checkInddCompound(compound);
+    }
+
+    @Test
+    public void testCreateStructureFromZipWithAllFilePrefix() throws IOException {
+        Blob blob = new FileBlob(new File(getClass().getResource("/files/file_prefix.zip").getPath()));
+        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(), "test", COMPOUND_DOC_TYPE);
+        compound = session.createDocument(compound);
+        compoundDocumentService.createStructureFromArchive(compound, blob);
+        DocumentModelList children = session.getChildren(compound.getRef());
+        Assert.assertEquals(2,children.size());
+        Assert.assertTrue(children.get(0).getPropertyValue("dc:title").toString().startsWith("doc"));
+    }
+
+    @Test
+    public void testCreateStructureFromZipWithAllFolderFilePrefix() throws IOException {
+        Blob blob = new FileBlob(new File(getClass().getResource("/files/folder_and_file_prefix.zip").getPath()));
+        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(), "test", COMPOUND_DOC_TYPE);
+        compound = session.createDocument(compound);
+        compoundDocumentService.createStructureFromArchive(compound, blob);
+        DocumentModelList children = session.getChildren(compound.getRef());
+        Assert.assertEquals(2,children.size());
+        Assert.assertTrue(children.get(0).getPropertyValue("dc:title").toString().startsWith("doc"));
     }
 
 
