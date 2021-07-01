@@ -236,7 +236,9 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                     } else {
                         folderPath = FilenameUtils.getPath(name);
                     }
-                    if (prefix == null) {
+
+                    // initialize the prefix with the first file in order to manage multiple prefix folder levels
+                    if (prefix == null && !entry.isDirectory()) {
                         prefix = folderPath;
                     } else if (StringUtils.isNotBlank(prefix)) {
                         prefix = longestSubstr(prefix, folderPath);
