@@ -73,4 +73,11 @@ public interface CompoundDocumentService {
      */
     boolean isSupportedArchiveFile(Blob archiveBlob);
 
+    /**
+     *
+     * @param document a compound document
+     * @return a zip archive containing the compound document file structure
+     */
+    Blob toZip(DocumentModel document) throws IOException;
+
 }

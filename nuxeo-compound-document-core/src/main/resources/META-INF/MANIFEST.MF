@@ -8,4 +8,4 @@ Bundle-ManifestVersion: 2
 Bundle-SymbolicName: nuxeo-compound-document-core;singleton=true
 Nuxeo-Component: OSGI-INF/service-contrib.xml, OSGI-INF/filemanager-contrib.xml, OSGI-INF/listener-contrib.xml,
     OSGI-INF/automation-contrib.xml, OSGI-INF/schema-contrib.xml, OSGI-INF/type-contrib.xml, OSGI-INF/thumbnail-contrib.xml,
-    OSGI-INF/document-adapter-contrib.xml, OSGI-INF/enricher-contrib.xml
+    OSGI-INF/document-adapter-contrib.xml, OSGI-INF/enricher-contrib.xml, OSGI-INF/rendition-contrib.xml

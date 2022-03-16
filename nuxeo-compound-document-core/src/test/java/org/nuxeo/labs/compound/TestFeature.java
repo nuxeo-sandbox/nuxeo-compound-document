@@ -34,7 +34,8 @@ import org.nuxeo.runtime.test.runner.RunnerFeature;
         "org.nuxeo.ecm.platform.webapp.types",
         "org.nuxeo.ecm.actions",
         "nuxeo-compound-document-core:test-compound-type.xml",
-        "org.nuxeo.ecm.platform.thumbnail"
+        "org.nuxeo.ecm.platform.thumbnail",
+        "org.nuxeo.ecm.platform.rendition.api"
 })
 public class TestFeature implements RunnerFeature {
 

@@ -1,6 +1,7 @@
 package org.nuxeo.labs.compound.service;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.nuxeo.ecm.automation.AutomationService;
@@ -12,6 +13,8 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.NuxeoException;
+import org.nuxeo.ecm.core.api.blobholder.BlobHolder;
+import org.nuxeo.ecm.core.api.blobholder.DocumentBlobHolder;
 import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventService;
@@ -29,7 +32,10 @@ import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
 import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +45,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import static org.nuxeo.ecm.core.io.ExportConstants.MARKER_FILE;
 import static org.nuxeo.ecm.core.schema.FacetNames.FOLDERISH;
@@ -171,7 +178,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             }
         }
 
-        compound.putContextData(STRUCTURE_IMPORTED,true);
+        compound.putContextData(STRUCTURE_IMPORTED, true);
 
         DocumentEventContext ctx = new DocumentEventContext(session, session.getPrincipal(), compound);
         Event event = ctx.newEvent(COMPOUND_ARCHIVE_IMPORTED);
@@ -194,10 +201,10 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         DocumentModelList children = session.query(query);
 
         List<DocumentModel> orphans = children.stream().filter(document -> {
-            String relativePath = document.getPathAsString().substring(compound.getPathAsString().length()+1);
+            String relativePath = document.getPathAsString().substring(compound.getPathAsString().length() + 1);
             //add trailing / for folders
             relativePath = document.hasFacet(FOLDERISH) ? relativePath + '/' : relativePath;
-            return !archive.getValidEntryList().contains(archive.getPathPrefix()+relativePath);
+            return !archive.getValidEntryList().contains(archive.getPathPrefix() + relativePath);
         }).collect(Collectors.toList());
 
         //delete orphans
@@ -210,6 +217,37 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
     @Override
     public boolean isSupportedArchiveFile(Blob archiveBlob) {
         return toCompoundArchive(archiveBlob) != null;
+    }
+
+    @Override
+    public Blob toZip(DocumentModel compound) throws IOException {
+        String query = String.format(
+                "Select * From Document Where ecm:ancestorId='%s' AND ecm:mixinType NOT IN ('HiddenInNavigation','Immutable') AND ecm:isTrashed = 0",
+                compound.getId());
+        DocumentModelList children = compound.getCoreSession().query(query);
+        File zipFile = Framework.createTempFile("zip", null);
+        try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            for (DocumentModel current : children) {
+                if (current.isFolder()) {
+                    continue;
+                }
+                Blob blob = current.getAdapter(BlobHolder.class).getBlob();
+                if (blob!=null) {
+                    String folderPath = current.getPath().removeLastSegments(1).toString().substring(compound.getPath().toString().length());
+                    String entryPath = folderPath.length() > 0 ? folderPath + "/" + blob.getFilename() : blob.getFilename();
+                    if (entryPath.startsWith("/")) {
+                        entryPath = entryPath.substring(1);
+                    }
+                    System.out.println(entryPath);
+                    ZipEntry entry = new ZipEntry(entryPath);
+                    zipOut.putNextEntry(entry);
+                    try (InputStream in = blob.getStream()) {
+                        IOUtils.copy(in, zipOut);
+                    }
+                }
+            }
+        }
+        return new FileBlob(zipFile, "application/zip", null, compound.getName() + ".zip", null);
     }
 
     /**
@@ -314,6 +352,4 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
 
         return maxLen > 0 ? s.substring(0, maxLen) : "";
     }
-
-
 }

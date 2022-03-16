@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.labs.compound.renditions">
+
+    <extension target="org.nuxeo.io.fsexporter.FSExporter" point="exportLogic">
+        <exportLogic class="org.nuxeo.io.fsexporter.DriveLikeExporterPlugin" />
+    </extension>
+
+    <extension point="filters" target="org.nuxeo.ecm.platform.actions.ActionService">
+        <filter id="isCompound">
+            <rule grant="true">
+                <facet>Compound</facet>
+            </rule>
+        </filter>
+    </extension>
+
+    <extension point="chains" target="org.nuxeo.ecm.core.operation.OperationServiceComponent">
+        <chain id="compoundToZip">
+            <operation id="Context.PopDocument" />
+            <operation id="Compound.ToZip"/>
+        </chain>
+    </extension>
+
+    <extension point="renditionDefinitions" target="org.nuxeo.ecm.platform.rendition.service.RenditionService">
+        <renditionDefinition name="compoundZipExport">
+            <label>label.exportview.zipExport</label>
+            <icon>/icons/zip_export.png</icon>
+            <contentType>application/zip</contentType>
+            <allowEmptyBlob>true</allowEmptyBlob>
+            <operationChain>compoundToZip</operationChain>
+            <filters>
+                <filter-id>isCompound</filter-id>
+            </filters>
+        </renditionDefinition>
+    </extension>
+
+</component>

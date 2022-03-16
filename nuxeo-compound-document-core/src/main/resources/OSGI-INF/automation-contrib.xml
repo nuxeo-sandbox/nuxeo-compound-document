@@ -1,5 +1,10 @@
 <?xml version="1.0"?>
 <component name="org.nuxeo.labs.compound.automation">
+
+    <extension point="operations" target="org.nuxeo.ecm.core.operation.OperationServiceComponent">
+        <operation class="org.nuxeo.labs.compound.operation.CompoundToZipOperation"/>
+    </extension>
+
     <extension target="org.nuxeo.automation.scripting.internals.AutomationScriptingComponent" point="operation">
 
         <scriptedOperation id="javascript.utils_get_compound_type">
