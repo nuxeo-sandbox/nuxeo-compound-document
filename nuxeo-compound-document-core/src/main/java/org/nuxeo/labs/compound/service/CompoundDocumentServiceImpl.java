@@ -14,7 +14,6 @@ import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.blobholder.BlobHolder;
-import org.nuxeo.ecm.core.api.blobholder.DocumentBlobHolder;
 import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventService;
@@ -25,6 +24,9 @@ import org.nuxeo.ecm.platform.actions.ejb.ActionManager;
 import org.nuxeo.ecm.platform.filemanager.api.FileImporterContext;
 import org.nuxeo.ecm.platform.filemanager.api.FileManager;
 import org.nuxeo.ecm.platform.filemanager.service.FileManagerService;
+import org.nuxeo.ecm.platform.query.api.PageProvider;
+import org.nuxeo.ecm.platform.query.api.PageProviderService;
+import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.platform.types.Type;
 import org.nuxeo.ecm.platform.types.TypeManager;
 import org.nuxeo.labs.compound.api.CompoundArchive;
@@ -36,6 +38,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -221,31 +224,43 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
 
     @Override
     public Blob toZip(DocumentModel compound) throws IOException {
-        String query = String.format(
-                "Select * From Document Where ecm:ancestorId='%s' AND ecm:mixinType NOT IN ('HiddenInNavigation','Immutable') AND ecm:isTrashed = 0",
-                compound.getId());
-        DocumentModelList children = compound.getCoreSession().query(query);
+        return toZip(compound, "compound_exportable_components");
+    }
+
+    @Override
+    public Blob toZip(DocumentModel compound, String pageproviderName) throws IOException {
+        PageProviderService pageProviderService = Framework.getService(PageProviderService.class);
+        Map<String, Serializable> props = new HashMap<>();
+        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) compound.getCoreSession());
+        @SuppressWarnings("unchecked")
+        PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) pageProviderService.getPageProvider(
+                pageproviderName, null, null, null, null, props, new Object[]{compound.getId()});
+
         File zipFile = Framework.createTempFile("zip", null);
         try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(zipFile))) {
-            for (DocumentModel current : children) {
-                if (current.isFolder()) {
-                    continue;
-                }
-                Blob blob = current.getAdapter(BlobHolder.class).getBlob();
-                if (blob!=null) {
-                    String folderPath = current.getPath().removeLastSegments(1).toString().substring(compound.getPath().toString().length());
-                    String entryPath = folderPath.length() > 0 ? folderPath + "/" + blob.getFilename() : blob.getFilename();
-                    if (entryPath.startsWith("/")) {
-                        entryPath = entryPath.substring(1);
+            do {
+                List<DocumentModel> children = pp.getCurrentPage();
+                for (DocumentModel current : children) {
+                    if (current.isFolder()) {
+                        continue;
                     }
-                    System.out.println(entryPath);
-                    ZipEntry entry = new ZipEntry(entryPath);
-                    zipOut.putNextEntry(entry);
-                    try (InputStream in = blob.getStream()) {
-                        IOUtils.copy(in, zipOut);
+                    Blob blob = current.getAdapter(BlobHolder.class).getBlob();
+                    if (blob != null) {
+                        String folderPath = current.getPath().removeLastSegments(1).toString().substring(compound.getPath().toString().length());
+                        String entryPath = folderPath.length() > 0 ? folderPath + "/" + blob.getFilename() : blob.getFilename();
+                        if (entryPath.startsWith("/")) {
+                            entryPath = entryPath.substring(1);
+                        }
+                        System.out.println(entryPath);
+                        ZipEntry entry = new ZipEntry(entryPath);
+                        zipOut.putNextEntry(entry);
+                        try (InputStream in = blob.getStream()) {
+                            IOUtils.copy(in, zipOut);
+                        }
                     }
                 }
-            }
+                pp.nextPage();
+            } while (pp.isNextEntryAvailable());
         }
         return new FileBlob(zipFile, "application/zip", null, compound.getName() + ".zip", null);
     }

@@ -1,0 +1,12 @@
+<component name="org.nuxeo.labs.compound.pp">
+
+    <extension point="providers" target="org.nuxeo.ecm.platform.query.api.PageProviderService">
+        <coreQueryPageProvider name="compound_exportable_components">
+            <pattern escapeParameters="true" quoteParameters="false">
+                Select * From Document Where ecm:ancestorId='?' AND ecm:mixinType NOT IN ('HiddenInNavigation','Immutable') AND ecm:isTrashed = 0
+            </pattern>
+            <pageSize>10</pageSize>
+        </coreQueryPageProvider>
+    </extension>
+
+</component>

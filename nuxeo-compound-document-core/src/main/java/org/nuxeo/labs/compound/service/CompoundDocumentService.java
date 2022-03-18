@@ -80,4 +80,12 @@ public interface CompoundDocumentService {
      */
     Blob toZip(DocumentModel document) throws IOException;
 
+    /**
+     *
+     * @param document a compound document
+     * @param pageproviderName the name of the page provider to use to fetch the components to export
+     * @return a zip archive containing the compound document file structure
+     */
+    Blob toZip(DocumentModel document, String pageproviderName) throws IOException;
+
 }

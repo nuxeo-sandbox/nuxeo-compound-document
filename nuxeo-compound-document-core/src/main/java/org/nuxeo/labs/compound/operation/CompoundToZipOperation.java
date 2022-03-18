@@ -23,13 +23,15 @@ import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
+import org.nuxeo.ecm.automation.core.annotations.Param;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.labs.compound.service.CompoundDocumentService;
 
 import java.io.IOException;
 
-@Operation(id = CompoundToZipOperation.ID, category = Constants.CAT_CONVERSION, label = "Zip Compound Document", description = "Zip Compound Document")
+@Operation(id = CompoundToZipOperation.ID, category = Constants.CAT_CONVERSION, label = "Zip Compound Document",
+        description = "Zip Compound Document")
 
 public class CompoundToZipOperation {
 
@@ -38,8 +40,13 @@ public class CompoundToZipOperation {
     @Context
     public CompoundDocumentService compoundDocumentService;
 
+    @Param(name = "pageProviderName", required = false)
+    String pageProviderName;
+
     @OperationMethod
     public Blob run(DocumentModel document) throws IOException {
-        return compoundDocumentService.toZip(document);
+        return pageProviderName != null ?
+                compoundDocumentService.toZip(document, pageProviderName) :
+                compoundDocumentService.toZip(document);
     }
 }
