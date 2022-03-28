@@ -251,7 +251,6 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                         if (entryPath.startsWith("/")) {
                             entryPath = entryPath.substring(1);
                         }
-                        System.out.println(entryPath);
                         ZipEntry entry = new ZipEntry(entryPath);
                         zipOut.putNextEntry(entry);
                         try (InputStream in = blob.getStream()) {
