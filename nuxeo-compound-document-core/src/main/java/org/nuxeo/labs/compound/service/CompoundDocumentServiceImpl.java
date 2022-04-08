@@ -1,9 +1,31 @@
 package org.nuxeo.labs.compound.service;
 
+import static org.nuxeo.ecm.core.io.ExportConstants.MARKER_FILE;
+import static org.nuxeo.ecm.core.schema.FacetNames.FOLDERISH;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.nuxeo.common.utils.Path;
 import org.nuxeo.ecm.automation.AutomationService;
 import org.nuxeo.ecm.automation.OperationContext;
 import org.nuxeo.ecm.automation.OperationException;
@@ -13,6 +35,7 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.NuxeoException;
+import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.blobholder.BlobHolder;
 import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.event.Event;
@@ -33,33 +56,20 @@ import org.nuxeo.labs.compound.api.CompoundArchive;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Serializable;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
-
-import static org.nuxeo.ecm.core.io.ExportConstants.MARKER_FILE;
-import static org.nuxeo.ecm.core.schema.FacetNames.FOLDERISH;
-
 public class CompoundDocumentServiceImpl extends DefaultComponent implements CompoundDocumentService {
 
     public static final String COMPOUND_ARCHIVE_IMPORTED = "compoundDocumentTreeImported";
+
     public static final String STRUCTURE_IMPORTED = "structureUpdated";
+
+    protected static final Log log = LogFactory.getLog(CompoundDocumentServiceImpl.class);
+
     public static String TYPE_FILTER_KEY = "org.nuxeo.labs.compound.service.type.filter";
+
     public static String COMPOUND_TYPE_SCRIPT = "javascript.utils_get_compound_type";
+
     public static String SUB_FOLDER_TYPE_SCRIPT = "javascript.utils_get_compound_sub_folder_type";
+
     public static List<String> MARKER_BLACKLIST = Arrays.asList(MARKER_FILE, "meta-data.csv");
 
     @Override
@@ -100,7 +110,8 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
     }
 
     @Override
-    public DocumentModel createCompoundFromArchive(DocumentModel parent, Blob archiveBlob, String documentType) throws IOException {
+    public DocumentModel createCompoundFromArchive(DocumentModel parent, Blob archiveBlob, String documentType)
+            throws IOException {
         CoreSession session = parent.getCoreSession();
         String compoundName = FilenameUtils.removeExtension(archiveBlob.getFilename());
         DocumentModel compound = session.createDocumentModel(parent.getPathAsString(), compoundName, documentType);
@@ -144,6 +155,8 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         while ((entry = zin.getNextEntry()) != null) {
             String entryName = entry.getName();
 
+            log.debug("ZIP Entry: " + entry);
+
             // filter OS crap
             if (!isValidEntry(entryName)) {
                 continue;
@@ -157,26 +170,37 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                 }
             }
 
-            String normalizedEntryName = entryName.endsWith("/") ? entryName.substring(0, entryName.length() - 1) : entryName;
-            String componentName = FilenameUtils.getName(normalizedEntryName);
-            String ComponentParentPath = FilenameUtils.getPath(normalizedEntryName);
+            Path entryPath = new Path(entryName);
+            log.debug("Entry converted to Path: " + entryPath);
 
-            String nuxeoPath = compound.getPathAsString() + "/" + ComponentParentPath;
+            String componentName = entryPath.lastSegment();
+            log.debug("ComponentName: " + componentName);
+
+            Path componentParentPath = entryPath.removeLastSegments(1);
+            log.debug("Relative Component Parent Path: " + componentParentPath);
+
+            Path nuxeoPath = compound.getPath();
+            DocumentModel parent;
+            if (!componentParentPath.isEmpty()) {
+                nuxeoPath = nuxeoPath.append(componentParentPath);
+                log.debug("Full Component Parent Path: " + nuxeoPath);
+                parent = getOrCreateFolder(compound, nuxeoPath);
+            } else {
+                parent = compound;
+            }
 
             if (entry.isDirectory()) {
-                DocumentModel folder = fileManager.defaultCreateFolder(
-                        session, componentName, nuxeoPath, getSubFolderTypeFromContext(
-                                compound, nuxeoPath, componentName), true, true);
+                DocumentModel folder = fileManager.defaultCreateFolder(session, componentName, parent.getPathAsString(),
+                        getSubFolderTypeFromContext(compound, parent.getPathAsString(), componentName), true, true);
                 if (folder == null) {
                     throw new NuxeoException("Filemanager couldn't create the folder: " + nuxeoPath);
                 }
-
             } else {
                 Blob fileBlob = new FileBlob(new CloseShieldInputStream(zin));
                 fileBlob.setFilename(componentName);
-                FileImporterContext context = FileImporterContext.builder(session, fileBlob, nuxeoPath)
-                        .overwrite(true)
-                        .build();
+                FileImporterContext context = FileImporterContext.builder(session, fileBlob, parent.getPathAsString())
+                                                                 .overwrite(true)
+                                                                 .build();
                 fileManager.createOrUpdateDocument(context);
             }
         }
@@ -187,6 +211,22 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         Event event = ctx.newEvent(COMPOUND_ARCHIVE_IMPORTED);
         Framework.getService(EventService.class).fireEvent(event);
         session.saveDocument(compound);
+    }
+
+    public DocumentModel getOrCreateFolder(DocumentModel compound, Path folderPath) {
+        CoreSession session = compound.getCoreSession();
+        if (compound.getPath().equals(folderPath)) {
+            return compound;
+        } else if (!session.exists(new PathRef(folderPath.toString()))) {
+            Path ancestorPath = folderPath.removeLastSegments(1);
+            String folderName = folderPath.lastSegment();
+            DocumentModel ancestorFolder = getOrCreateFolder(compound, ancestorPath);
+            FileManagerService fileManager = (FileManagerService) Framework.getService(FileManager.class);
+            return fileManager.defaultCreateFolder(session, folderName, ancestorFolder.getPathAsString(),
+                    getSubFolderTypeFromContext(compound, ancestorFolder.getPathAsString(), folderName), true, true);
+        } else {
+            return session.getDocument(new PathRef(folderPath.toString()));
+        }
     }
 
     @Override
@@ -205,15 +245,15 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
 
         List<DocumentModel> orphans = children.stream().filter(document -> {
             String relativePath = document.getPathAsString().substring(compound.getPathAsString().length() + 1);
-            //add trailing / for folders
+            // add trailing / for folders
             relativePath = document.hasFacet(FOLDERISH) ? relativePath + '/' : relativePath;
             return !archive.getValidEntryList().contains(archive.getPathPrefix() + relativePath);
         }).collect(Collectors.toList());
 
-        //delete orphans
+        // delete orphans
         session.removeDocuments(orphans.stream().map(DocumentModel::getRef).toArray(DocumentRef[]::new));
 
-        //update structure
+        // update structure
         createStructureFromArchive(compound, archive);
     }
 
@@ -234,7 +274,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) compound.getCoreSession());
         @SuppressWarnings("unchecked")
         PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) pageProviderService.getPageProvider(
-                pageproviderName, null, null, null, null, props, new Object[]{compound.getId()});
+                pageproviderName, null, null, null, null, props, new Object[] { compound.getId() });
 
         File zipFile = Framework.createTempFile("zip", null);
         try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(zipFile))) {
@@ -246,8 +286,12 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                     }
                     Blob blob = current.getAdapter(BlobHolder.class).getBlob();
                     if (blob != null) {
-                        String folderPath = current.getPath().removeLastSegments(1).toString().substring(compound.getPath().toString().length());
-                        String entryPath = folderPath.length() > 0 ? folderPath + "/" + blob.getFilename() : blob.getFilename();
+                        String folderPath = current.getPath()
+                                                   .removeLastSegments(1)
+                                                   .toString()
+                                                   .substring(compound.getPath().toString().length());
+                        String entryPath = folderPath.length() > 0 ? folderPath + "/" + blob.getFilename()
+                                : blob.getFilename();
                         if (entryPath.startsWith("/")) {
                             entryPath = entryPath.substring(1);
                         }
@@ -276,12 +320,13 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         try (ZipInputStream zin = new ZipInputStream(new BufferedInputStream(archiveBlob.getStream()))) {
             ZipEntry entry;
             boolean isSupported = false;
-            while ((entry = zin.getNextEntry()) != null && (isSupported = !MARKER_BLACKLIST.contains(entry.getName()))) {
+            while ((entry = zin.getNextEntry()) != null
+                    && (isSupported = !MARKER_BLACKLIST.contains(entry.getName()))) {
                 String name = entry.getName();
                 if (isValidEntry(name)) {
                     validEntryList.add(name);
 
-                    //get path prefix
+                    // get path prefix
                     String folderPath;
                     if (entry.isDirectory()) {
                         folderPath = name;
@@ -318,14 +363,9 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             return false;
         }
 
-        Path path = Path.of(entry);
-        String filename = path.getFileName().toString();
-        if (filename.startsWith(".") || filename.contentEquals("desktop.ini")
-                || filename.contentEquals("Thumbs.db") || filename.startsWith("Icon")) {
-            return false;
-        }
-
-        return true;
+        String filename = FilenameUtils.getName(entry);
+        return !filename.startsWith(".") && !filename.contentEquals("desktop.ini") && !filename.contentEquals("Thumbs.db")
+                && !filename.startsWith("Icon");
     }
 
     public String longestSubstr(String s, String t) {

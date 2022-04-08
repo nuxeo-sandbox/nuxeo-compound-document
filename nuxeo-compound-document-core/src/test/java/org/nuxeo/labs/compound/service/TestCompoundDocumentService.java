@@ -147,5 +147,13 @@ public class TestCompoundDocumentService {
         Assert.assertEquals(4,children.size());
     }
 
+    @Test
+    public void testCreateInddStructureFromZipWithNoDirectoryEntry() throws IOException {
+        Blob blob = new FileBlob(new File(getClass().getResource( "/files/no-directory-entry.zip").getPath()));
+        DocumentModel compound = session.createDocumentModel(session.getRootDocument().getPathAsString(), "test", COMPOUND_DOC_TYPE);
+        compound = session.createDocument(compound);
+        compoundDocumentService.createStructureFromArchive(compound, blob);
+        checkInddCompound(compound);
+    }
 
 }
