@@ -19,6 +19,11 @@
 
 package org.nuxeo.labs.compound.thumbnail;
 
+import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_FACET;
+import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_PROPERTY_NAME;
+import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_PREVIEW_DOCUMENT_PROP;
+import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_THUMBNAIL_DOCUMENT_PROP;
+
 import org.apache.commons.lang3.StringUtils;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
@@ -28,39 +33,34 @@ import org.nuxeo.ecm.core.api.thumbnail.ThumbnailService;
 import org.nuxeo.ecm.platform.thumbnail.factories.ThumbnailDocumentFactory;
 import org.nuxeo.runtime.api.Framework;
 
-import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_FACET;
-import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_PROPERTY_NAME;
-import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_PREVIEW_DOCUMENT_PROP;
-import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_THUMBNAIL_DOCUMENT_PROP;
-
 public class CompoundDocumentThumbnailFactory extends ThumbnailDocumentFactory {
 
     @Override
     public Blob getThumbnail(DocumentModel doc, CoreSession session) {
 
-        //give priority to thumbnail property
+        // give priority to thumbnail property
         if (doc.hasFacet(THUMBNAIL_FACET)) {
             Blob blob = (Blob) doc.getPropertyValue(THUMBNAIL_PROPERTY_NAME);
-            if (blob!=null) {
+            if (blob != null) {
                 return blob;
             }
         }
 
-        //then from the thumbnail document
+        // then from the thumbnail document
         String thumbnailDocId = (String) doc.getPropertyValue(COMPOUND_THUMBNAIL_DOCUMENT_PROP);
-        Blob thumbnailBlob = getThumbnailFromDocId(thumbnailDocId,session);
+        Blob thumbnailBlob = getThumbnailFromDocId(thumbnailDocId, session);
         if (thumbnailBlob != null) {
             return thumbnailBlob;
         }
 
         // then from the preview document
         String previewDocId = (String) doc.getPropertyValue(COMPOUND_PREVIEW_DOCUMENT_PROP);
-        thumbnailBlob = getThumbnailFromDocId(previewDocId,session);
+        thumbnailBlob = getThumbnailFromDocId(previewDocId, session);
         if (thumbnailBlob != null) {
             return thumbnailBlob;
         }
 
-        //fallback to default factory
+        // fallback to default factory
         return getDefaultThumbnail(doc);
     }
 
@@ -68,7 +68,7 @@ public class CompoundDocumentThumbnailFactory extends ThumbnailDocumentFactory {
         if (StringUtils.isNotEmpty(docId)) {
             ThumbnailService thumbnailService = Framework.getService(ThumbnailService.class);
             DocumentModel previewDoc = session.getDocument(new IdRef(docId));
-            return thumbnailService.getThumbnail(previewDoc,session);
+            return thumbnailService.getThumbnail(previewDoc, session);
         }
         return null;
     }

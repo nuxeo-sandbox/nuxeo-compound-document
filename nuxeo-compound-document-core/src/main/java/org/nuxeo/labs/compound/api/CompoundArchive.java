@@ -19,13 +19,15 @@
 
 package org.nuxeo.labs.compound.api;
 
-import org.nuxeo.ecm.core.api.Blob;
-
 import java.util.List;
+
+import org.nuxeo.ecm.core.api.Blob;
 
 public class CompoundArchive {
     Blob blob;
+
     List<String> validEntryList;
+
     String pathPrefix;
 
     public CompoundArchive(Blob blob, List<String> validEntryList, String pathPrefix) {

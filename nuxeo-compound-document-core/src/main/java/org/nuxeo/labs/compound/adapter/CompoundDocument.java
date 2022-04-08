@@ -24,29 +24,27 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 public interface CompoundDocument {
 
     String COMPOUND_FACET = "Compound";
+
     String COMPOUND_PREVIEW_DOCUMENT_PROP = "compound:previewDocument";
+
     String COMPOUND_THUMBNAIL_DOCUMENT_PROP = "compound:thumbnailDocument";
 
     /**
-     *
      * @return the preview document
      */
     DocumentModel getPreviewDocument();
 
     /**
-     *
      * @param preview the documennt to set as the preview
      */
     void setPreviewDocument(DocumentModel preview);
 
     /**
-     *
      * @return the thumbnail document
      */
     DocumentModel getThumbnailDocument();
 
     /**
-     *
      * @param thumbnail the document to set as the thumbnail
      */
     void setThumbnailDocument(DocumentModel thumbnail);

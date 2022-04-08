@@ -26,6 +26,7 @@ public class CompoundDocumentAdapterFactory implements DocumentAdapterFactory {
 
     @Override
     public Object getAdapter(DocumentModel doc, Class<?> itf) {
-        return doc.getDocumentType().hasFacet(CompoundDocument.COMPOUND_FACET) ? new CompoundDocumentAdapter(doc) : null;
+        return doc.getDocumentType().hasFacet(CompoundDocument.COMPOUND_FACET) ? new CompoundDocumentAdapter(doc)
+                : null;
     }
 }

@@ -19,6 +19,8 @@
 
 package org.nuxeo.labs.compound.listener;
 
+import java.io.IOException;
+
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.NuxeoException;
@@ -28,8 +30,6 @@ import org.nuxeo.ecm.core.event.EventListener;
 import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
 import org.nuxeo.labs.compound.service.CompoundDocumentService;
 import org.nuxeo.runtime.api.Framework;
-
-import java.io.IOException;
 
 public class CompoundDocumentCreatedListener implements EventListener {
 
@@ -63,8 +63,8 @@ public class CompoundDocumentCreatedListener implements EventListener {
             throw new NuxeoException(e);
         }
 
-        //remove blob
-        doc.setPropertyValue(FILE_CONTENT,null);
+        // remove blob
+        doc.setPropertyValue(FILE_CONTENT, null);
 
     }
 

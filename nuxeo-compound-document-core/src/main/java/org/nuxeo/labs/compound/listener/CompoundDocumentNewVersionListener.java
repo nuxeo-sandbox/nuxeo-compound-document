@@ -19,6 +19,10 @@
 
 package org.nuxeo.labs.compound.listener;
 
+import static org.nuxeo.labs.compound.service.CompoundDocumentServiceImpl.STRUCTURE_IMPORTED;
+
+import java.io.IOException;
+
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.NuxeoException;
@@ -29,10 +33,6 @@ import org.nuxeo.ecm.core.event.EventListener;
 import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
 import org.nuxeo.labs.compound.service.CompoundDocumentService;
 import org.nuxeo.runtime.api.Framework;
-
-import java.io.IOException;
-
-import static org.nuxeo.labs.compound.service.CompoundDocumentServiceImpl.STRUCTURE_IMPORTED;
 
 public class CompoundDocumentNewVersionListener implements EventListener {
 
@@ -55,8 +55,8 @@ public class CompoundDocumentNewVersionListener implements EventListener {
         }
 
         Boolean flag = (Boolean) doc.getContextData(STRUCTURE_IMPORTED);
-        if (flag!=null && flag) {
-            //structure was already updated in this transaction
+        if (flag != null && flag) {
+            // structure was already updated in this transaction
             return;
         }
 
@@ -73,8 +73,8 @@ public class CompoundDocumentNewVersionListener implements EventListener {
             throw new NuxeoException(e);
         }
 
-        //remove blob
-        doc.setPropertyValue(FILE_CONTENT,null);
+        // remove blob
+        doc.setPropertyValue(FILE_CONTENT, null);
 
     }
 

@@ -19,21 +19,23 @@
 
 package org.nuxeo.labs.compound.io;
 
-import com.fasterxml.jackson.core.JsonGenerator;
+import static org.apache.commons.lang3.StringUtils.defaultString;
+import static org.nuxeo.ecm.core.io.registry.reflect.Instantiations.SINGLETON;
+import static org.nuxeo.ecm.core.io.registry.reflect.Priorities.REFERENCE;
+import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_FACET;
+import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_PREVIEW_DOCUMENT_PROP;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.thumbnail.ThumbnailAdapter;
 import org.nuxeo.ecm.core.io.registry.reflect.Setup;
 import org.nuxeo.ecm.platform.thumbnail.io.ThumbnailJsonEnricher;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-
-import static org.apache.commons.lang3.StringUtils.defaultString;
-import static org.nuxeo.ecm.core.io.registry.reflect.Instantiations.SINGLETON;
-import static org.nuxeo.ecm.core.io.registry.reflect.Priorities.REFERENCE;
-import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_FACET;
-import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_PREVIEW_DOCUMENT_PROP;
+import com.fasterxml.jackson.core.JsonGenerator;
 
 @Setup(mode = SINGLETON, priority = REFERENCE)
 public class CompoundDocumentThumbnailEnricher extends ThumbnailJsonEnricher {
@@ -46,10 +48,10 @@ public class CompoundDocumentThumbnailEnricher extends ThumbnailJsonEnricher {
             return;
         }
 
-        //get thumbnail
+        // get thumbnail
         Blob thumbnail = document.getAdapter(ThumbnailAdapter.class).getThumbnail(document.getCoreSession());
 
-        //if thumbnail is null or an icon, fallback to default
+        // if thumbnail is null or an icon, fallback to default
         if (thumbnail == null || thumbnail.getDigest() == null) {
             super.write(jg, document);
             return;
@@ -60,7 +62,7 @@ public class CompoundDocumentThumbnailEnricher extends ThumbnailJsonEnricher {
         jg.writeStringField(THUMBNAIL_URL_LABEL,
                 String.format(THUMBNAIL_URL_PATTERN, ctx.getBaseUrl().replaceAll("/$", ""),
                         document.getRepositoryName(), document.getId(),
-                        URLEncoder.encode(defaultString(thumbnail.getDigest()), "UTF-8")));
+                        URLEncoder.encode(defaultString(thumbnail.getDigest()), StandardCharsets.UTF_8)));
         jg.writeEndObject();
 
     }
