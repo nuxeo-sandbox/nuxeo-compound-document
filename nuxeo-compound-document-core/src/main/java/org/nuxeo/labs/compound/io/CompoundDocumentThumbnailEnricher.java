@@ -30,8 +30,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.thumbnail.ThumbnailAdapter;
+import org.nuxeo.ecm.core.io.registry.context.RenderingContext;
 import org.nuxeo.ecm.core.io.registry.reflect.Setup;
 import org.nuxeo.ecm.platform.thumbnail.io.ThumbnailJsonEnricher;
 
@@ -42,28 +44,37 @@ public class CompoundDocumentThumbnailEnricher extends ThumbnailJsonEnricher {
 
     @Override
     public void write(JsonGenerator jg, DocumentModel document) throws IOException {
-        // not compound or no preview document, fallback to default
-        if (!document.hasFacet(COMPOUND_FACET) || document.getPropertyValue(COMPOUND_PREVIEW_DOCUMENT_PROP) == null) {
-            super.write(jg, document);
-            return;
+        // How to instanciate a Session if `obj` is a DocumentModel
+        // try (SessionWrapper wrapper = ctx.getSession(obj)) {
+        // CoreSession session = wrapper.getSession();
+        // ...
+        // }
+        try (RenderingContext.SessionWrapper wrapper = ctx.getSession(document)) {
+            CoreSession session = wrapper.getSession();
+            if (!session.exists(document.getRef())) {
+                // not compound or no preview document, fallback to default
+                if (!document.hasFacet(COMPOUND_FACET) || document.getPropertyValue(COMPOUND_PREVIEW_DOCUMENT_PROP) == null) {
+                    super.write(jg, document);
+                    return;
+                }
+
+                // get thumbnail
+                Blob thumbnail = document.getAdapter(ThumbnailAdapter.class).getThumbnail(session);
+
+                // if thumbnail is null or an icon, fallback to default
+                if (thumbnail == null || thumbnail.getDigest() == null) {
+                    super.write(jg, document);
+                    return;
+                }
+
+                jg.writeFieldName(NAME);
+                jg.writeStartObject();
+                jg.writeStringField(THUMBNAIL_URL_LABEL,
+                        String.format(THUMBNAIL_URL_PATTERN, ctx.getBaseUrl().replaceAll("/$", ""),
+                                document.getRepositoryName(), document.getId(),
+                                URLEncoder.encode(defaultString(thumbnail.getDigest()), StandardCharsets.UTF_8)));
+                jg.writeEndObject();
+            }
         }
-
-        // get thumbnail
-        Blob thumbnail = document.getAdapter(ThumbnailAdapter.class).getThumbnail(document.getCoreSession());
-
-        // if thumbnail is null or an icon, fallback to default
-        if (thumbnail == null || thumbnail.getDigest() == null) {
-            super.write(jg, document);
-            return;
-        }
-
-        jg.writeFieldName(NAME);
-        jg.writeStartObject();
-        jg.writeStringField(THUMBNAIL_URL_LABEL,
-                String.format(THUMBNAIL_URL_PATTERN, ctx.getBaseUrl().replaceAll("/$", ""),
-                        document.getRepositoryName(), document.getId(),
-                        URLEncoder.encode(defaultString(thumbnail.getDigest()), StandardCharsets.UTF_8)));
-        jg.writeEndObject();
-
     }
 }
