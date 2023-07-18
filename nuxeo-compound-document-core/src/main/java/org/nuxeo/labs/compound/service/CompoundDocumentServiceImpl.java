@@ -248,7 +248,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             // add trailing / for folders
             relativePath = document.hasFacet(FOLDERISH) ? relativePath + '/' : relativePath;
             return !archive.getValidEntryList().contains(archive.getPathPrefix() + relativePath);
-        }).collect(Collectors.toList());
+        }).toList();
 
         // delete orphans
         session.removeDocuments(orphans.stream().map(DocumentModel::getRef).toArray(DocumentRef[]::new));
