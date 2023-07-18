@@ -23,8 +23,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.nuxeo.common.utils.Path;
 import org.nuxeo.ecm.automation.AutomationService;
 import org.nuxeo.ecm.automation.OperationContext;
@@ -62,7 +62,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
 
     public static final String STRUCTURE_IMPORTED = "structureUpdated";
 
-    protected static final Log log = LogFactory.getLog(CompoundDocumentServiceImpl.class);
+    protected static final Logger log = LogManager.getLogger(CompoundDocumentServiceImpl.class);
 
     public static String TYPE_FILTER_KEY = "org.nuxeo.labs.compound.service.type.filter";
 
@@ -364,8 +364,8 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         }
 
         String filename = FilenameUtils.getName(entry);
-        return !filename.startsWith(".") && !filename.contentEquals("desktop.ini") && !filename.contentEquals("Thumbs.db")
-                && !filename.startsWith("Icon");
+        return !filename.startsWith(".") && !filename.contentEquals("desktop.ini")
+                && !filename.contentEquals("Thumbs.db") && !filename.startsWith("Icon");
     }
 
     public String longestSubstr(String s, String t) {

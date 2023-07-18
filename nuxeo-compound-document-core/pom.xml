@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.nuxeo.labs</groupId>
     <artifactId>nuxeo-compound-document-parent</artifactId>
-    <version>2021.11.0-SNAPHOT</version>
+    <version>2023.0.0-SNAPHOT</version>
   </parent>
   <artifactId>nuxeo-compound-document-core</artifactId>
   <name>Nuxeo compound document core</name>

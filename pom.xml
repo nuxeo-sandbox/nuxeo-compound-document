@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.nuxeo</groupId>
     <artifactId>nuxeo-parent</artifactId>
-    <version>2021.23</version>
+    <version>2023.0</version>
   </parent>
 
   <groupId>org.nuxeo.labs</groupId>
   <artifactId>nuxeo-compound-document-parent</artifactId>
-  <version>2021.11.0-SNAPHOT</version>
+  <version>2023.0.0-SNAPHOT</version>
   <name>Nuxeo compound document parent</name>
   <description>Plugin to manage compound documents in the Nuxeo Platform</description>
   <packaging>pom</packaging>
@@ -17,7 +17,7 @@
   <properties>
     <!-- Skip Nuxeo enforcer rules by default -->
     <nuxeo.skip.enforcer>true</nuxeo.skip.enforcer>
-    <nuxeo.target.version>2021.*</nuxeo.target.version>
+    <nuxeo.target.version>2023.*</nuxeo.target.version>
     <skipDocker>false</skipDocker>
   </properties>
 

@@ -19,8 +19,8 @@
 
 package org.nuxeo.labs.compound.filemanager;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.PathRef;
@@ -31,7 +31,7 @@ import org.nuxeo.runtime.api.Framework;
 
 public class CompoundDocumentArchiveImporter extends DefaultFileImporter {
 
-    protected static final Log log = LogFactory.getLog(CompoundDocumentArchiveImporter.class);
+    protected static final Logger log = LogManager.getLogger(CompoundDocumentArchiveImporter.class);
 
     @Override
     public DocumentModel createOrUpdate(FileImporterContext context) {
