@@ -1,15 +1,14 @@
-<?xml version="1.0"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.nuxeo</groupId>
     <artifactId>nuxeo-parent</artifactId>
-    <version>2023.0</version>
+    <version>2025.0.102</version>
   </parent>
 
   <groupId>org.nuxeo.labs</groupId>
   <artifactId>nuxeo-compound-document-parent</artifactId>
-  <version>2023.1.0-SNAPSHOT</version>
+  <version>2025.0.0-SNAPSHOT</version>
   <name>Nuxeo compound document parent</name>
   <description>Plugin to manage compound documents in the Nuxeo Platform</description>
   <packaging>pom</packaging>
@@ -17,7 +16,7 @@
   <properties>
     <!-- Skip Nuxeo enforcer rules by default -->
     <nuxeo.skip.enforcer>true</nuxeo.skip.enforcer>
-    <nuxeo.target.version>2023.*</nuxeo.target.version>
+    <nuxeo.target.version>2025.*</nuxeo.target.version>
     <skipDocker>false</skipDocker>
   </properties>
 
@@ -27,13 +26,13 @@
     <module>nuxeo-compound-document-package</module>
   </modules>
 
-  <scm />
-  <licenses />
-  <mailingLists />
-  <issueManagement />
-  <ciManagement />
-  <developers />
-  <distributionManagement />
+  <scm/>
+  <licenses/>
+  <mailingLists/>
+  <issueManagement/>
+  <ciManagement/>
+  <developers/>
+  <distributionManagement/>
 
   <dependencyManagement>
     <dependencies>
