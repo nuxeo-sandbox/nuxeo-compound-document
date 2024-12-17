@@ -32,7 +32,7 @@ import org.nuxeo.labs.compound.TestHelper;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_FACET;
 import static org.nuxeo.labs.compound.adapter.CompoundDocument.COMPOUND_PREVIEW_DOCUMENT_PROP;
